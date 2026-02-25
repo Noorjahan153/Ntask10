@@ -11,63 +11,60 @@ jobs:
 
     steps:
 
-      #################################
-      # Checkout Code
-      #################################
+    #################################
+    # Checkout Code
+    #################################
 
-      - name: Checkout
-        uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      #################################
-      # Setup Terraform
-      #################################
+    #################################
+    # Setup Terraform
+    #################################
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
 
-      #################################
-      # AWS Credentials
-      #################################
+    #################################
+    # Configure AWS Credentials
+    #################################
 
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+    - name: Configure AWS
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
 
-      #################################
-      # Terraform Init
-      #################################
+    #################################
+    # Terraform Init + Apply
+    #################################
 
-      - name: Terraform Init
-        run: terraform init
+    - name: Terraform Init
+      run: terraform init
 
-      #################################
-      # Terraform Apply
-      #################################
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+    #################################
+    # Login to AWS ECR
+    #################################
 
-      #################################
-      # Login to ECR
-      #################################
+    - name: Login to ECR
+      run: |
+        aws ecr get-login-password --region us-east-1 | \
+        docker login --username AWS --password-stdin \
+        055013504553.dkr.ecr.us-east-1.amazonaws.com
 
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | \
-          docker login --username AWS --password-stdin \
-          055013504553.dkr.ecr.us-east-1.amazonaws.com
+    #################################
+    # Build + Push Docker Image
+    #################################
 
-      #################################
-      # Build & Push Image
-      #################################
-
-      - name: Build & Push Image
-        run: |
-          docker build -t noor-strapi .
-          docker tag noor-strapi:latest \
-          055013504553.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest
-          docker push \
-          055013504553.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest
+    - name: Build and Push Docker Image
+      run: |
+        cd strapi-app
+        docker build -t noor-strapi .
+        docker tag noor-strapi:latest \
+        055013504553.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest
+        docker push \
+        055013504553.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest
