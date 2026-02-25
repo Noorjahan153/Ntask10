@@ -31,7 +31,6 @@ resource "aws_lb" "noor_alb" {
 
   security_groups = [data.aws_security_group.alb_sg.id]
 
-  # ⭐ Use only 2 subnets (Different AZs)
   subnets = [
     data.aws_subnets.default.ids[0],
     data.aws_subnets.default.ids[1]
@@ -47,7 +46,8 @@ resource "aws_lb_target_group" "noor_blue_tg" {
   port     = 1337
   protocol = "HTTP"
 
-  vpc_id = data.aws_vpc.default.id
+  target_type = "ip"
+  vpc_id      = data.aws_vpc.default.id
 }
 
 resource "aws_lb_target_group" "noor_green_tg" {
@@ -55,7 +55,8 @@ resource "aws_lb_target_group" "noor_green_tg" {
   port     = 1337
   protocol = "HTTP"
 
-  vpc_id = data.aws_vpc.default.id
+  target_type = "ip"
+  vpc_id      = data.aws_vpc.default.id
 }
 
 ############################################
@@ -68,7 +69,7 @@ resource "aws_lb_listener" "noor_listener" {
   protocol          = "HTTP"
 
   default_action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.noor_blue_tg.arn
   }
 }
@@ -82,7 +83,7 @@ resource "aws_ecs_cluster" "noor_cluster" {
 }
 
 ############################################
-# ECS Task Definition ⭐ IMPORTANT
+# ECS Task Definition
 ############################################
 
 resource "aws_ecs_task_definition" "noor_task" {
@@ -99,9 +100,11 @@ resource "aws_ecs_task_definition" "noor_task" {
     {
       name  = "strapi"
       image = "nginx"
+
       portMappings = [
         {
           containerPort = 1337
+          protocol      = "tcp"
         }
       ]
     }
@@ -109,7 +112,7 @@ resource "aws_ecs_task_definition" "noor_task" {
 }
 
 ############################################
-# ECS Service
+# ECS Service ⭐ IMPORTANT FIX
 ############################################
 
 resource "aws_ecs_service" "noor_service" {
@@ -118,7 +121,6 @@ resource "aws_ecs_service" "noor_service" {
   cluster         = aws_ecs_cluster.noor_cluster.id
 
   launch_type = "FARGATE"
-
   desired_count = 1
 
   deployment_controller {
@@ -131,5 +133,11 @@ resource "aws_ecs_service" "noor_service" {
     subnets          = data.aws_subnets.default.ids
     assign_public_ip = true
     security_groups  = [data.aws_security_group.alb_sg.id]
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.noor_blue_tg.arn
+    container_name   = "strapi"
+    container_port   = 1337
   }
 }
