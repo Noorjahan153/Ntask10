@@ -14,7 +14,7 @@ data "aws_subnets" "default" {
 }
 
 ############################################
-# Security Groups (Existing)
+# Security Group (Existing)
 ############################################
 
 data "aws_security_group" "alb_sg" {
@@ -30,7 +30,12 @@ resource "aws_lb" "noor_alb" {
   load_balancer_type = "application"
 
   security_groups = [data.aws_security_group.alb_sg.id]
-  subnets         = data.aws_subnets.default.ids
+
+  # ⭐ Use only 2 subnets (Different AZs)
+  subnets = [
+    data.aws_subnets.default.ids[0],
+    data.aws_subnets.default.ids[1]
+  ]
 }
 
 ############################################
@@ -64,7 +69,6 @@ resource "aws_lb_listener" "noor_listener" {
 
   default_action {
     type = "forward"
-
     target_group_arn = aws_lb_target_group.noor_blue_tg.arn
   }
 }
@@ -78,6 +82,33 @@ resource "aws_ecs_cluster" "noor_cluster" {
 }
 
 ############################################
+# ECS Task Definition ⭐ IMPORTANT
+############################################
+
+resource "aws_ecs_task_definition" "noor_task" {
+  family                   = "noor-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode            = "awsvpc"
+
+  cpu    = "256"
+  memory = "512"
+
+  execution_role_arn = "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole"
+
+  container_definitions = jsonencode([
+    {
+      name  = "strapi"
+      image = "nginx"
+      portMappings = [
+        {
+          containerPort = 1337
+        }
+      ]
+    }
+  ])
+}
+
+############################################
 # ECS Service
 ############################################
 
@@ -87,11 +118,11 @@ resource "aws_ecs_service" "noor_service" {
   launch_type     = "FARGATE"
   desired_count   = 1
 
-  task_definition = "PLACE_TASK_DEFINITION_ARN"
+  task_definition = aws_ecs_task_definition.noor_task.arn
 
   network_configuration {
-    subnets         = data.aws_subnets.default.ids
+    subnets          = data.aws_subnets.default.ids
     assign_public_ip = true
-    security_groups = [data.aws_security_group.alb_sg.id]
+    security_groups  = [data.aws_security_group.alb_sg.id]
   }
 }
