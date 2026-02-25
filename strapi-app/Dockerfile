@@ -4,10 +4,13 @@ WORKDIR /app
 
 RUN apk add --no-cache python3 make g++ git
 
-COPY package.json package-lock.json ./
+# Copy only package.json (since lock file may not exist)
+COPY package.json ./
 
+# Install dependencies
 RUN npm install --legacy-peer-deps
 
+# Copy rest of project
 COPY . .
 
 RUN npm run build
