@@ -1,6 +1,12 @@
+# Use Default VPC
+data "aws_vpc" "default" {
+  default = true
+}
+
+# ALB Security Group
 resource "aws_security_group" "noor_alb_sg" {
   name   = "noor-alb-sg"
-  vpc_id = aws_vpc.noor_vpc.id
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
     from_port   = 80
@@ -24,9 +30,10 @@ resource "aws_security_group" "noor_alb_sg" {
   }
 }
 
+# ECS Security Group
 resource "aws_security_group" "noor_ecs_sg" {
   name   = "noor-ecs-sg"
-  vpc_id = aws_vpc.noor_vpc.id
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
     from_port       = 1337
