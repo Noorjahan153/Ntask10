@@ -4,12 +4,6 @@ resource "aws_lb" "noor_alb" {
   subnets            = [aws_subnet.noor_subnet.id]
   security_groups    = [aws_security_group.noor_alb_sg.id]
 }
-resource "aws_lb" "noor_alb" {
-  name               = "noor-alb"
-  load_balancer_type = "application"
-  subnets            = [aws_subnet.noor_subnet.id]
-  security_groups    = [aws_security_group.noor_alb_sg.id]
-}
 resource "aws_lb_target_group" "noor_green_tg" {
   name     = "noor-green-tg"
   port     = 1337
