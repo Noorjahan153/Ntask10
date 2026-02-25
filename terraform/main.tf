@@ -120,7 +120,7 @@ resource "aws_ecs_service" "noor_service" {
   name            = "noor-service"
   cluster         = aws_ecs_cluster.noor_cluster.id
 
-  launch_type  = "FARGATE"
+  launch_type   = "FARGATE"
   desired_count = 1
 
   deployment_controller {
@@ -132,13 +132,18 @@ resource "aws_ecs_service" "noor_service" {
   network_configuration {
     subnets          = data.aws_subnets.default.ids
     assign_public_ip = true
-
-    security_groups = [data.aws_security_group.noor_alb_sg.id]
+    security_groups  = [data.aws_security_group.noor_alb_sg.id]
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.noor_blue_tg.arn
     container_name    = "noor-strapi"
     container_port    = 1337
+  }
+
+  lifecycle {
+    ignore_changes = [
+      task_definition
+    ]
   }
 }
