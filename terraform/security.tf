@@ -1,8 +1,3 @@
-# Default VPC Reference
-data "aws_vpc" "default" {
-  default = true
-}
-
 # ALB Security Group
 resource "aws_security_group" "noor_alb_sg" {
   name   = "noor-alb-sg"
