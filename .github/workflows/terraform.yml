@@ -1,4 +1,4 @@
-name: Deploy to ECS BlueGreen
+name: Terraform
 
 on:
   push:
@@ -6,8 +6,12 @@ on:
       - main
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform   # IMPORTANT if your .tf files are inside terraform folder
 
     steps:
       - name: Checkout
@@ -20,9 +24,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Deploy to CodeDeploy
-        run: |
-          aws deploy create-deployment \
-            --application-name strapi-ecs-app \
-            --deployment-group-name strapi-ecs-dg \
-            --revision revisionType=AppSpecContent,appSpecContent="{\"content\":$(cat appspec.yml | jq -Rs .)}"
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
