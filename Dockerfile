@@ -2,14 +2,17 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install required build tools
+# Install build tools (VERY IMPORTANT for Strapi)
 RUN apk add --no-cache python3 make g++ git
 
-COPY package*.json ./
+# Copy only package files first (better caching)
+COPY package.json package-lock.json ./
 
-# Install ALL dependencies (Important for Strapi build)
-RUN npm install
+# Clean install (safer than npm install)
+RUN npm cache clean --force
+RUN npm install --legacy-peer-deps
 
+# Copy source code
 COPY . .
 
 # Build Strapi admin panel
