@@ -10,7 +10,7 @@ This project demonstrates Blue-Green deployment of a Strapi CMS application on A
 
 The goal is to achieve zero-downtime deployment using traffic switching between Blue and Green environments.
 
-🛠 Technologies Used
+**🛠 Technologies Used**
 
 * Strapi CMS
 * AWS ECS Fargate
@@ -20,7 +20,7 @@ The goal is to achieve zero-downtime deployment using traffic switching between 
 * Docker
 * GitHub
 
-⚙ Prerequisites
+**⚙ Prerequisites**
 
 * AWS Account
 * Terraform Installed
@@ -28,23 +28,51 @@ The goal is to achieve zero-downtime deployment using traffic switching between 
 * Docker Installed
 * GitHub Repository
 
-🔐 Environment Variables
-
-HOST=0.0.0.0
-PORT=1337
-
-APP_KEYS=key1,key2,key3,key4
-API_TOKEN_SALT=salt123
-ADMIN_JWT_SECRET=jwtsecret123
-JWT_SECRET=jwtsecret123
-
 **Commands I Used**
 
-//git clone <repository-url>
-cd strapi-ecs-prod
-git add .
-git commit -m "Initial deployment setup"
-git push origin main//
+* git clone <repository-url>
+* cd strapi-ecs-prod
+* git add .
+* git commit -m "Initial deployment setup"
+* git push origin main
+* followed github actions and terraform commands and ecs commands .
+
+**🔁 Blue-Green Deployment Knowledge**
+
+Blue-Green deployment is a strategy used to reduce downtime and deployment risks.
+
+In this project:
+
+* Blue Environment → Current production version of Strapi
+* Green Environment → New application version being tested
+
+  Traffic is routed using:
+
+* Application Load Balancer
+* AWS CodeDeploy deployment configuration
+
+  Deployment Strategy Used:
+
+* CodeDeployDefault.ECSCanary10Percent5Minutes
+* Automatic rollback enabled for failed deployments
+
+This ensures:
+
+* Zero downtime deployment
+* Safer release management
+* Easy rollback if issues occur
+
+ **🎯 Conclusion**
+
+Through this project, I gained practical experience in cloud infrastructure deployment and modern DevOps practices. I learned how to deploy a containerized Strapi CMS application on AWS using Infrastructure as Code and Blue-Green deployment strategy to achieve zero-downtime releases.
+
+I also understood how different AWS services work together in real-world production environments. While working on this project, I faced challenges such as 502 Bad Gateway errors, which helped me learn how to debug container networking, load balancer health checks, and security group configurations.
+
+Thank you.
+
+
+  
+  
 
 
 
