@@ -1,4 +1,4 @@
-name: Terraform
+name: Terraform + Docker Deploy
 
 on:
   push:
@@ -6,17 +6,15 @@ on:
       - main
 
 jobs:
-  terraform:
+  deploy:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: terraform   # IMPORTANT if your .tf files are inside terraform folder
-
     steps:
-      - name: Checkout
+      # Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
+      # Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -24,14 +22,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # ---------------------------
+      # Terraform Section
+      # ---------------------------
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
+        working-directory: terraform
         run: terraform init
 
-      - name: Terraform Plan
-        run: terraform plan
-
       - name: Terraform Apply
+        working-directory: terraform
         run: terraform apply -auto-approve
+
+      # ---------------------------
+      # Docker + ECR Section
+      # ---------------------------
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Docker Image
+        run: |
+          docker build -t strapi-app ./strapi-app
+
+      - name: Tag Docker Image
+        run: |
+          docker tag strapi-app:latest ${{ steps.login-ecr.outputs.registry }}/strapi:latest
+
+      - name: Push Docker Image
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/strapi:latest
