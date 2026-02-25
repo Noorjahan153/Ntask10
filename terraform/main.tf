@@ -18,7 +18,7 @@ data "aws_subnets" "default" {
 ############################################
 
 data "aws_security_group" "alb_sg" {
-  name = "noor-alb-sg"
+  id = "sg-022f8a9654e44daf4"
 }
 
 ############################################
