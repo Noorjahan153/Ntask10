@@ -99,7 +99,7 @@ resource "aws_ecs_task_definition" "noor_task" {
   container_definitions = jsonencode([
     {
       name  = "noor-strapi"
-      image = "nginx"
+     image = "811738710312.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest"
 
       portMappings = [
         {
