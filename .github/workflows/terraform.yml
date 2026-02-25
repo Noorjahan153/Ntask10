@@ -11,16 +11,8 @@ jobs:
 
     steps:
 
-    #####################################
-    # Checkout Code
-    #####################################
-
     - name: Checkout Repository
       uses: actions/checkout@v3
-
-    #####################################
-    # Configure AWS Credentials
-    #####################################
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -30,7 +22,7 @@ jobs:
         aws-region: us-east-1
 
     #####################################
-    # Setup Terraform
+    # Terraform
     #####################################
 
     - name: Setup Terraform
@@ -45,28 +37,23 @@ jobs:
       run: terraform plan
 
     #####################################
-    # Docker Build + Push to ECR (Manual Repo)
+    # ECR Login + Docker
     #####################################
 
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build Docker Image
-      run: |
-        docker build -t strapi-app ./strapi-app
+    - name: Build Image
+      run: docker build -t strapi-app ./strapi-app
 
-    - name: Tag Docker Image
+    - name: Tag Image
       run: |
         docker tag strapi-app:latest 811738710312.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest
 
-    - name: Push Docker Image
+    - name: Push Image
       run: |
         docker push 811738710312.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest
 
     #####################################
-    # Terraform Apply
+    # Deployment (Do NOT Put Terraform Apply Here)
     #####################################
-
-    - name: Terraform Apply
-      working-directory: terraform
-      run: terraform apply -auto-approve
