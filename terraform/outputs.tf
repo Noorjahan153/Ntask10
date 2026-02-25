@@ -1,7 +1,3 @@
-output "rds_endpoint" {
-  value = aws_db_instance.noor_db.endpoint
-}
-
-output "alb_dns" {
+output "alb_dns_name" {
   value = aws_lb.noor_alb.dns_name
 }

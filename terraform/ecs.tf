@@ -1,21 +1,40 @@
-resource "aws_ecs_cluster" "cluster" {
-  name = "strapi-cluster"
+resource "aws_ecs_cluster" "noor_cluster" {
+  name = "noor-cluster"
 }
+resource "aws_ecs_task_definition" "noor_task" {
+  family                   = "noor-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = "arn:aws:iam::811738710312:role/ecsTaskExecutionRole"
 
-resource "aws_security_group" "ecs_sg" {
-  vpc_id = aws_vpc.main.id
+  container_definitions = jsonencode([
+    {
+      name  = "noor-container"
+      image = "placeholder"
+      portMappings = [{
+        containerPort = 1337
+      }]
+    }
+  ])
+}
+resource "aws_ecs_service" "noor_service" {
+  name            = "noor-service"
+  cluster         = aws_ecs_cluster.noor_cluster.id
+  task_definition = aws_ecs_task_definition.noor_task.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
 
-  ingress {
-    from_port       = 1337
-    to_port         = 1337
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id]
+  network_configuration {
+    subnets         = [aws_subnet.noor_subnet.id]
+    security_groups = [aws_security_group.noor_ecs_sg.id]
+    assign_public_ip = true
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+  load_balancer {
+    target_group_arn = aws_lb_target_group.noor_blue_tg.arn
+    container_name   = "noor-container"
+    container_port   = 1337
   }
 }
