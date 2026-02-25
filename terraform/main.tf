@@ -17,7 +17,7 @@ data "aws_subnets" "default" {
 # Security Group (Existing)
 ############################################
 
-data "aws_security_group" "alb_sg" {
+data "aws_security_group" "noor_alb_sg" {
   id = "sg-022f8a9654e44daf4"
 }
 
@@ -29,7 +29,7 @@ resource "aws_lb" "noor_alb" {
   name               = "noor-alb"
   load_balancer_type = "application"
 
-  security_groups = [data.aws_security_group.alb_sg.id]
+  security_groups = [data.aws_security_group.noor_alb_sg.id]
 
   subnets = [
     data.aws_subnets.default.ids[0],
@@ -42,21 +42,21 @@ resource "aws_lb" "noor_alb" {
 ############################################
 
 resource "aws_lb_target_group" "noor_blue_tg" {
-  name     = "noor-blue-tg"
-  port     = 1337
-  protocol = "HTTP"
-
+  name        = "noor-blue-tg"
+  port        = 1337
+  protocol    = "HTTP"
   target_type = "ip"
-  vpc_id      = data.aws_vpc.default.id
+
+  vpc_id = data.aws_vpc.default.id
 }
 
 resource "aws_lb_target_group" "noor_green_tg" {
-  name     = "noor-green-tg"
-  port     = 1337
-  protocol = "HTTP"
-
+  name        = "noor-green-tg"
+  port        = 1337
+  protocol    = "HTTP"
   target_type = "ip"
-  vpc_id      = data.aws_vpc.default.id
+
+  vpc_id = data.aws_vpc.default.id
 }
 
 ############################################
@@ -98,7 +98,7 @@ resource "aws_ecs_task_definition" "noor_task" {
 
   container_definitions = jsonencode([
     {
-      name  = "strapi"
+      name  = "noor-strapi"
       image = "nginx"
 
       portMappings = [
@@ -112,7 +112,7 @@ resource "aws_ecs_task_definition" "noor_task" {
 }
 
 ############################################
-# ECS Service ⭐ IMPORTANT FIX
+# ECS Service
 ############################################
 
 resource "aws_ecs_service" "noor_service" {
@@ -120,7 +120,7 @@ resource "aws_ecs_service" "noor_service" {
   name            = "noor-service"
   cluster         = aws_ecs_cluster.noor_cluster.id
 
-  launch_type = "FARGATE"
+  launch_type  = "FARGATE"
   desired_count = 1
 
   deployment_controller {
@@ -132,12 +132,13 @@ resource "aws_ecs_service" "noor_service" {
   network_configuration {
     subnets          = data.aws_subnets.default.ids
     assign_public_ip = true
-    security_groups  = [data.aws_security_group.alb_sg.id]
+
+    security_groups = [data.aws_security_group.noor_alb_sg.id]
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.noor_blue_tg.arn
-    container_name   = "strapi"
-    container_port   = 1337
+    container_name    = "noor-strapi"
+    container_port    = 1337
   }
 }
