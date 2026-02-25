@@ -93,7 +93,7 @@ resource "aws_ecs_task_definition" "noor_task" {
   cpu    = "256"
   memory = "512"
 
-  execution_role_arn = "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole"
+  execution_role_arn = "arn:aws:iam::811738710312:role/ecsTaskExecutionRole"
 
   container_definitions = jsonencode([
     {
