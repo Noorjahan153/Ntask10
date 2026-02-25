@@ -1,76 +1,111 @@
-############################################
-# Provider VPC
-############################################
-
-data "aws_vpc" "default" {
-  default = true
+provider "aws" {
+  region = "us-east-1"
 }
 
-data "aws_subnets" "default" {
+############################################
+# VPC + Subnets (Your Existing)
+############################################
+
+data "aws_vpc" "main" {
+  id = "vpc-0f72e3c54b764c43b"
+}
+
+data "aws_subnets" "main" {
   filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+    name   = "subnet-id"
+    values = [
+      "subnet-0b78cbdbc40e4b1bd",
+      "subnet-0b97f669dae349838"
+    ]
   }
 }
 
 ############################################
-# Security Group (Existing)
+# Security Groups
 ############################################
 
-data "aws_security_group" "noor_alb_sg" {
-  id = "sg-022f8a9654e44daf4"
+resource "aws_security_group" "alb_sg" {
+  name   = "strapi-alb-sg"
+  vpc_id = data.aws_vpc.main.id
+
+  ingress {
+    from_port = 80
+    to_port   = 443
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port = 0
+    to_port   = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "ecs_sg" {
+  name   = "strapi-ecs-sg"
+  vpc_id = data.aws_vpc.main.id
+
+  ingress {
+    from_port = 1337
+    to_port   = 1337
+    protocol  = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 ############################################
 # ALB
 ############################################
 
-resource "aws_lb" "noor_alb" {
-  name               = "noor-alb"
+resource "aws_lb" "alb" {
+  name = "strapi-alb"
   load_balancer_type = "application"
 
-  security_groups = [data.aws_security_group.noor_alb_sg.id]
-
-  subnets = [
-    data.aws_subnets.default.ids[0],
-    data.aws_subnets.default.ids[1]
-  ]
+  security_groups = [aws_security_group.alb_sg.id]
+  subnets = data.aws_subnets.main.ids
 }
 
 ############################################
 # Target Groups
 ############################################
 
-resource "aws_lb_target_group" "noor_blue_tg" {
-  name        = "noor-blue-tg"
-  port        = 1337
-  protocol    = "HTTP"
+resource "aws_lb_target_group" "blue" {
+  name = "blue-tg"
+  port = 1337
+  protocol = "HTTP"
   target_type = "ip"
-
-  vpc_id = data.aws_vpc.default.id
+  vpc_id = data.aws_vpc.main.id
 }
 
-resource "aws_lb_target_group" "noor_green_tg" {
-  name        = "noor-green-tg"
-  port        = 1337
-  protocol    = "HTTP"
+resource "aws_lb_target_group" "green" {
+  name = "green-tg"
+  port = 1337
+  protocol = "HTTP"
   target_type = "ip"
-
-  vpc_id = data.aws_vpc.default.id
+  vpc_id = data.aws_vpc.main.id
 }
 
 ############################################
 # Listener
 ############################################
 
-resource "aws_lb_listener" "noor_listener" {
-  load_balancer_arn = aws_lb.noor_alb.arn
-  port              = 80
-  protocol          = "HTTP"
+resource "aws_lb_listener" "listener" {
+  load_balancer_arn = aws_lb.alb.arn
+  port = 80
+  protocol = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.noor_blue_tg.arn
+    type = "forward"
+    target_group_arn = aws_lb_target_group.blue.arn
   }
 }
 
@@ -78,35 +113,33 @@ resource "aws_lb_listener" "noor_listener" {
 # ECS Cluster
 ############################################
 
-resource "aws_ecs_cluster" "noor_cluster" {
-  name = "noor-cluster"
+resource "aws_ecs_cluster" "cluster" {
+  name = "strapi-cluster"
 }
 
 ############################################
 # ECS Task Definition
 ############################################
 
-resource "aws_ecs_task_definition" "noor_task" {
-  family                   = "noor-task"
-  requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
+resource "aws_ecs_task_definition" "task" {
+  family = "strapi-task"
 
-  cpu    = "256"
+  requires_compatibilities = ["FARGATE"]
+  network_mode = "awsvpc"
+
+  cpu = "256"
   memory = "512"
 
-  execution_role_arn = "arn:aws:iam::811738710312:role/ecsTaskExecutionRole"
+  execution_role_arn = "arn:aws:iam::055013504553:role/ecsTaskExecutionRole"
 
   container_definitions = jsonencode([
     {
-      name  = "noor-strapi"
-     image = "811738710312.dkr.ecr.us-east-1.amazonaws.com/noor-strapi:latest"
+      name = "strapi"
+      image = "nginx"
 
-      portMappings = [
-        {
-          containerPort = 1337
-          protocol      = "tcp"
-        }
-      ]
+      portMappings = [{
+        containerPort = 1337
+      }]
     }
   ])
 }
@@ -115,10 +148,10 @@ resource "aws_ecs_task_definition" "noor_task" {
 # ECS Service
 ############################################
 
-resource "aws_ecs_service" "noor_service" {
+resource "aws_ecs_service" "service" {
 
-  name            = "noor-service"
-  cluster         = aws_ecs_cluster.noor_cluster.id
+  name    = "strapi-service"
+  cluster = aws_ecs_cluster.cluster.id
 
   launch_type   = "FARGATE"
   desired_count = 1
@@ -127,21 +160,23 @@ resource "aws_ecs_service" "noor_service" {
     type = "CODE_DEPLOY"
   }
 
-  task_definition = aws_ecs_task_definition.noor_task.arn
+  task_definition = aws_ecs_task_definition.task.arn
 
   network_configuration {
-    subnets          = data.aws_subnets.default.ids
+    subnets = data.aws_subnets.main.ids
     assign_public_ip = true
-    security_groups  = [data.aws_security_group.noor_alb_sg.id]
+    security_groups = [aws_security_group.ecs_sg.id]
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.noor_blue_tg.arn
-    container_name    = "noor-strapi"
-    container_port    = 1337
+    target_group_arn = aws_lb_target_group.blue.arn
+    container_name = "strapi"
+    container_port = 1337
   }
 
   lifecycle {
-    ignore_changes = [task_definition]
+    ignore_changes = [
+      task_definition
+    ]
   }
 }
