@@ -113,10 +113,17 @@ resource "aws_ecs_task_definition" "noor_task" {
 ############################################
 
 resource "aws_ecs_service" "noor_service" {
+
   name            = "noor-service"
   cluster         = aws_ecs_cluster.noor_cluster.id
-  launch_type     = "FARGATE"
+
   desired_count   = 1
+
+  launch_type = "FARGATE"
+
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
 
   task_definition = aws_ecs_task_definition.noor_task.arn
 
@@ -124,5 +131,11 @@ resource "aws_ecs_service" "noor_service" {
     subnets          = data.aws_subnets.default.ids
     assign_public_ip = true
     security_groups  = [data.aws_security_group.alb_sg.id]
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.noor_blue_tg.arn
+    container_name   = "strapi"
+    container_port   = 1337
   }
 }
