@@ -26,11 +26,14 @@ resource "aws_ecs_service" "noor_service" {
   launch_type     = "FARGATE"
   desired_count   = 1
 
-  network_configuration {
-    subnets         = [aws_subnet.noor_subnet.id]
-    security_groups = [aws_security_group.noor_ecs_sg.id]
-    assign_public_ip = true
-  }
+ network_configuration {
+  subnets = [
+    "subnet-0cc23dc8400d81bf3",
+    "subnet-00efaeabe6a244f6f"
+  ]
+  security_groups = [aws_security_group.noor_ecs_sg.id]
+  assign_public_ip = true
+}
 
   load_balancer {
     target_group_arn = aws_lb_target_group.noor_blue_tg.arn
